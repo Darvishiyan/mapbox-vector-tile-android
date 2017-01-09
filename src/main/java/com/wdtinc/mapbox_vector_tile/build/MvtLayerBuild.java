@@ -38,6 +38,8 @@ public final class MvtLayerBuild {
 
         // Add values
         final Iterable<Object> vals = layerProps.getVals();
-        vals.forEach(o -> layerBuilder.addValues(MvtValue.toValue(o)));
+        for(Object o:vals){
+            layerBuilder.addValues(MvtValue.toValue(o));
+        }
     }
 }

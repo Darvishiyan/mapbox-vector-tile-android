@@ -51,7 +51,11 @@ public final class JtsGeomStats {
             final VectorTile.Tile.GeomType geomType = JtsAdapter.toGeomType(nextGeom);
 
             // Count features by type
-            stats.featureCounts.compute(geomType, (k, v) -> v + 1);
+            Integer oldValue = stats.featureCounts.get(geomType);
+            if(oldValue!=null){
+                oldValue+=1;
+                stats.featureCounts.put(geomType, oldValue);
+            }
 
             // Get stats per feature
             stats.featureStats.add(getStats(nextGeom, geomType));
