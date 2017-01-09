@@ -10,10 +10,10 @@ import com.wdtinc.mapbox_vector_tile.encoding.ZigZag;
 import com.wdtinc.mapbox_vector_tile.util.Vec2d;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,8 +30,8 @@ public final class MvtReader {
      * See {@link #loadMvt(InputStream, GeometryFactory, ITagConverter, RingClassifier)}.
      * Uses {@link #RING_CLASSIFIER_V2_1} for forming Polygons and MultiPolygons.
      *
-     * @param p path to the MVT
-     * @param geomFactory allows for JTS geometry creation
+     * @param f            MVT file
+     * @param geomFactory  allows for JTS geometry creation
      * @param tagConverter converts MVT feature tags to JTS user data object
      * @return JTS geometries in using MVT coordinates
      * @throws IOException failure reading MVT from path
@@ -40,19 +40,19 @@ public final class MvtReader {
      * @see Geometry#getUserData()
      * @see RingClassifier
      */
-    public static List<Geometry> loadMvt(Path p,
+    public static List<Geometry> loadMvt(File f,
                                          GeometryFactory geomFactory,
                                          ITagConverter tagConverter) throws IOException {
-        return loadMvt(p, geomFactory, tagConverter, RING_CLASSIFIER_V2_1);
+        return loadMvt(f, geomFactory, tagConverter, RING_CLASSIFIER_V2_1);
     }
 
     /**
      * Convenience method for loading MVT from file.
      * See {@link #loadMvt(InputStream, GeometryFactory, ITagConverter, RingClassifier)}.
      *
-     * @param p path to the MVT
-     * @param geomFactory allows for JTS geometry creation
-     * @param tagConverter converts MVT feature tags to JTS user data object
+     * @param f              MVT file
+     * @param geomFactory    allows for JTS geometry creation
+     * @param tagConverter   converts MVT feature tags to JTS user data object
      * @param ringClassifier determines how rings are parsed into Polygons and MultiPolygons
      * @return JTS geometries in using MVT coordinates
      * @throws IOException failure reading MVT from path
@@ -61,13 +61,13 @@ public final class MvtReader {
      * @see Geometry#getUserData()
      * @see RingClassifier
      */
-    public static List<Geometry> loadMvt(Path p,
+    public static List<Geometry> loadMvt(File f,
                                          GeometryFactory geomFactory,
                                          ITagConverter tagConverter,
                                          RingClassifier ringClassifier) throws IOException {
         final List<Geometry> geometries;
 
-        try(final InputStream is = new FileInputStream(p.toFile())) {
+        try (final InputStream is = new FileInputStream(f)) {
             geometries = loadMvt(is, geomFactory, tagConverter, ringClassifier);
         }
 
@@ -78,8 +78,8 @@ public final class MvtReader {
      * Load an MVT to JTS geometries using coordinates. Uses {@code tagConverter} to create user data
      * from feature properties. Uses {@link #RING_CLASSIFIER_V2_1} for forming Polygons and MultiPolygons.
      *
-     * @param is stream with MVT data
-     * @param geomFactory allows for JTS geometry creation
+     * @param is           stream with MVT data
+     * @param geomFactory  allows for JTS geometry creation
      * @param tagConverter converts MVT feature tags to JTS user data object.
      * @return JTS geometries in using MVT coordinates
      * @throws IOException failure reading MVT from stream
@@ -98,9 +98,9 @@ public final class MvtReader {
      * Load an MVT to JTS geometries using coordinates. Uses {@code tagConverter} to create user data
      * from feature properties.
      *
-     * @param is stream with MVT data
-     * @param geomFactory allows for JTS geometry creation
-     * @param tagConverter converts MVT feature tags to JTS user data object.
+     * @param is             stream with MVT data
+     * @param geomFactory    allows for JTS geometry creation
+     * @param tagConverter   converts MVT feature tags to JTS user data object.
      * @param ringClassifier determines how rings are parsed into Polygons and MultiPolygons
      * @return JTS geometries in using MVT coordinates
      * @throws IOException failure reading MVT from stream
@@ -117,25 +117,25 @@ public final class MvtReader {
         final VectorTile.Tile mvt = VectorTile.Tile.parseFrom(is);
         final Vec2d cursor = new Vec2d();
 
-        for(VectorTile.Tile.Layer nextLayer : mvt.getLayersList()) {
+        for (VectorTile.Tile.Layer nextLayer : mvt.getLayersList()) {
 
             final ProtocolStringList keysList = nextLayer.getKeysList();
             final List<VectorTile.Tile.Value> valuesList = nextLayer.getValuesList();
 
-            for(VectorTile.Tile.Feature nextFeature : nextLayer.getFeaturesList()) {
+            for (VectorTile.Tile.Feature nextFeature : nextLayer.getFeaturesList()) {
 
                 final Long id = nextFeature.hasId() ? nextFeature.getId() : null;
 
                 final VectorTile.Tile.GeomType geomType = nextFeature.getType();
 
-                if(geomType == VectorTile.Tile.GeomType.UNKNOWN) {
+                if (geomType == VectorTile.Tile.GeomType.UNKNOWN) {
                     continue;
                 }
 
                 final List<Integer> geomCmds = nextFeature.getGeometryList();
                 cursor.set(0d, 0d);
                 final Geometry nextGeom = readGeometry(geomCmds, geomType, geomFactory, cursor, ringClassifier);
-                if(nextGeom != null) {
+                if (nextGeom != null) {
                     tileGeoms.add(nextGeom);
                     nextGeom.setUserData(tagConverter.toUserData(id, nextFeature.getTagsList(), keysList, valuesList));
                 }
@@ -152,7 +152,7 @@ public final class MvtReader {
                                          RingClassifier ringClassifier) {
         Geometry result = null;
 
-        switch(geomType) {
+        switch (geomType) {
             case POINT:
                 result = readPoints(geomFactory, geomCmds, cursor);
                 break;
@@ -173,14 +173,14 @@ public final class MvtReader {
      * Create {@link Point} or {@link MultiPoint} from MVT geometry drawing commands.
      *
      * @param geomFactory creates JTS geometry
-     * @param geomCmds contains MVT geometry commands
-     * @param cursor contains current MVT extent position
+     * @param geomCmds    contains MVT geometry commands
+     * @param cursor      contains current MVT extent position
      * @return JTS geometry or null on failure
      */
     private static Geometry readPoints(GeometryFactory geomFactory, List<Integer> geomCmds, Vec2d cursor) {
 
         // Guard: must have header
-        if(geomCmds.isEmpty()) {
+        if (geomCmds.isEmpty()) {
             return null;
         }
 
@@ -193,18 +193,18 @@ public final class MvtReader {
         final GeomCmd cmd = GeomCmdHdr.getCmd(cmdHdr);
 
         // Guard: command type
-        if(cmd != GeomCmd.MoveTo) {
+        if (cmd != GeomCmd.MoveTo) {
             return null;
         }
 
         // Guard: minimum command length
-        if(cmdLength < 1) {
+        if (cmdLength < 1) {
             return null;
         }
 
         // Guard: header data unsupported by geometry command buffer
         //  (require header and at least 1 value * 2 params)
-        if(cmdLength * GeomCmd.MoveTo.getParamCount() + 1 > geomCmds.size()) {
+        if (cmdLength * GeomCmd.MoveTo.getParamCount() + 1 > geomCmds.size()) {
             return null;
         }
 
@@ -212,7 +212,7 @@ public final class MvtReader {
         int coordIndex = 0;
         Coordinate nextCoord;
 
-        while(i < geomCmds.size() - 1) {
+        while (i < geomCmds.size() - 1) {
             cursor.add(
                     ZigZag.decode(geomCmds.get(i++)),
                     ZigZag.decode(geomCmds.get(i++))
@@ -230,14 +230,14 @@ public final class MvtReader {
      * Create {@link LineString} or {@link MultiLineString} from MVT geometry drawing commands.
      *
      * @param geomFactory creates JTS geometry
-     * @param geomCmds contains MVT geometry commands
-     * @param cursor contains current MVT extent position
+     * @param geomCmds    contains MVT geometry commands
+     * @param cursor      contains current MVT extent position
      * @return JTS geometry or null on failure
      */
     private static Geometry readLines(GeometryFactory geomFactory, List<Integer> geomCmds, Vec2d cursor) {
 
         // Guard: must have header
-        if(geomCmds.isEmpty()) {
+        if (geomCmds.isEmpty()) {
             return null;
         }
 
@@ -251,7 +251,7 @@ public final class MvtReader {
         CoordinateSequence nextCoordSeq;
         Coordinate nextCoord;
 
-        while(i <= geomCmds.size() - MIN_LINE_STRING_LEN) {
+        while (i <= geomCmds.size() - MIN_LINE_STRING_LEN) {
 
             // --------------------------------------------
             // Expected: MoveTo command of length 1
@@ -263,7 +263,7 @@ public final class MvtReader {
             cmd = GeomCmdHdr.getCmd(cmdHdr);
 
             // Guard: command type and length
-            if(cmd != GeomCmd.MoveTo || cmdLength != 1) {
+            if (cmd != GeomCmd.MoveTo || cmdLength != 1) {
                 break;
             }
 
@@ -284,13 +284,13 @@ public final class MvtReader {
             cmd = GeomCmdHdr.getCmd(cmdHdr);
 
             // Guard: command type and length
-            if(cmd != GeomCmd.LineTo || cmdLength < 1) {
+            if (cmd != GeomCmd.LineTo || cmdLength < 1) {
                 break;
             }
 
             // Guard: header data length unsupported by geometry command buffer
             //  (require at least (1 value * 2 params) + current_index)
-            if((cmdLength * GeomCmd.LineTo.getParamCount()) + i > geomCmds.size()) {
+            if ((cmdLength * GeomCmd.LineTo.getParamCount()) + i > geomCmds.size()) {
                 break;
             }
 
@@ -302,7 +302,7 @@ public final class MvtReader {
             nextCoord.setOrdinate(1, cursor.y);
 
             // Set remaining points from LineTo command
-            for(int lineToIndex = 0; lineToIndex < cmdLength; ++lineToIndex) {
+            for (int lineToIndex = 0; lineToIndex < cmdLength; ++lineToIndex) {
 
                 // Update cursor position with relative line delta
                 cursor.add(
@@ -324,9 +324,9 @@ public final class MvtReader {
     /**
      * Create {@link Polygon} or {@link MultiPolygon} from MVT geometry drawing commands.
      *
-     * @param geomFactory creates JTS geometry
-     * @param geomCmds contains MVT geometry commands
-     * @param cursor contains current MVT extent position
+     * @param geomFactory    creates JTS geometry
+     * @param geomCmds       contains MVT geometry commands
+     * @param cursor         contains current MVT extent position
      * @param ringClassifier
      * @return JTS geometry or null on failure
      */
@@ -336,7 +336,7 @@ public final class MvtReader {
                                       RingClassifier ringClassifier) {
 
         // Guard: must have header
-        if(geomCmds.isEmpty()) {
+        if (geomCmds.isEmpty()) {
             return null;
         }
 
@@ -350,7 +350,7 @@ public final class MvtReader {
         CoordinateSequence nextCoordSeq;
         Coordinate nextCoord;
 
-        while(i <= geomCmds.size() - MIN_POLYGON_LEN) {
+        while (i <= geomCmds.size() - MIN_POLYGON_LEN) {
 
             // --------------------------------------------
             // Expected: MoveTo command of length 1
@@ -362,7 +362,7 @@ public final class MvtReader {
             cmd = GeomCmdHdr.getCmd(cmdHdr);
 
             // Guard: command type and length
-            if(cmd != GeomCmd.MoveTo || cmdLength != 1) {
+            if (cmd != GeomCmd.MoveTo || cmdLength != 1) {
                 break;
             }
 
@@ -383,13 +383,13 @@ public final class MvtReader {
             cmd = GeomCmdHdr.getCmd(cmdHdr);
 
             // Guard: command type and length
-            if(cmd != GeomCmd.LineTo || cmdLength < 2) {
+            if (cmd != GeomCmd.LineTo || cmdLength < 2) {
                 break;
             }
 
             // Guard: header data length unsupported by geometry command buffer
             //  (require at least (2 values * 2 params) + (current index 'i') + (1 for ClosePath))
-            if((cmdLength * GeomCmd.LineTo.getParamCount()) + i + 1 > geomCmds.size()) {
+            if ((cmdLength * GeomCmd.LineTo.getParamCount()) + i + 1 > geomCmds.size()) {
                 break;
             }
 
@@ -401,7 +401,7 @@ public final class MvtReader {
             nextCoord.setOrdinate(1, cursor.y);
 
             // Set remaining points from LineTo command
-            for(int lineToIndex = 0; lineToIndex < cmdLength; ++lineToIndex) {
+            for (int lineToIndex = 0; lineToIndex < cmdLength; ++lineToIndex) {
 
                 // Update cursor position with relative line delta
                 cursor.add(
@@ -424,7 +424,7 @@ public final class MvtReader {
             cmdLength = GeomCmdHdr.getCmdLength(cmdHdr);
             cmd = GeomCmdHdr.getCmd(cmdHdr);
 
-            if(cmd != GeomCmd.ClosePath || cmdLength != 1) {
+            if (cmd != GeomCmd.ClosePath || cmdLength != 1) {
                 break;
             }
 
@@ -439,10 +439,10 @@ public final class MvtReader {
 
         // Classify rings
         final List<Polygon> polygons = ringClassifier.classifyRings(rings, geomFactory);
-        if(polygons.size() < 1) {
+        if (polygons.size() < 1) {
             return null;
 
-        } else if(polygons.size() == 1) {
+        } else if (polygons.size() == 1) {
             return polygons.get(0);
 
         } else {
@@ -459,10 +459,10 @@ public final class MvtReader {
 
         /**
          * <p>Classify a list of rings into polygons using surveyor formula.</p>
-         *
+         * <p>
          * <p>Zero-area polygons are removed.</p>
          *
-         * @param rings linear rings to classify into polygons
+         * @param rings       linear rings to classify into polygons
          * @param geomFactory creates JTS geometry
          * @return polygons from classified rings
          */
@@ -470,10 +470,14 @@ public final class MvtReader {
     }
 
 
-    /** Area for surveyor formula may be positive or negative for exterior rings. Mimics Mapbox parsers supporting V1. */
+    /**
+     * Area for surveyor formula may be positive or negative for exterior rings. Mimics Mapbox parsers supporting V1.
+     */
     public static final RingClassifier RING_CLASSIFIER_V1 = new PolyRingClassifierV1();
 
-    /** Area from surveyor formula must be positive for exterior rings. Obeys V2.1 spec. */
+    /**
+     * Area from surveyor formula must be positive for exterior rings. Obeys V2.1 spec.
+     */
     public static final RingClassifier RING_CLASSIFIER_V2_1 = new PolyRingClassifierV2_1();
 
 
@@ -492,19 +496,19 @@ public final class MvtReader {
             double outerArea = 0d;
             LinearRing outerPoly = null;
 
-            for(LinearRing r : rings) {
+            for (LinearRing r : rings) {
                 double area = CGAlgorithms.signedArea(r.getCoordinates());
 
-                if(!r.isRing()) {
+                if (!r.isRing()) {
                     continue; // sanity check, could probably be handled in a isSimple() check
                 }
 
-                if(area == 0d) {
+                if (area == 0d) {
                     continue; // zero-area
                 }
 
-                if(area > 0d) {
-                    if(outerPoly != null) {
+                if (area > 0d) {
+                    if (outerPoly != null) {
                         polygons.add(geomFactory.createPolygon(outerPoly, holes.toArray(new LinearRing[holes.size()])));
                         holes.clear();
                     }
@@ -515,7 +519,7 @@ public final class MvtReader {
 
                 } else {
 
-                    if(Math.abs(outerArea) < Math.abs(area)) {
+                    if (Math.abs(outerArea) < Math.abs(area)) {
                         continue; // Holes must have less area, could probably be handled in a isSimple() check
                     }
 
@@ -524,7 +528,7 @@ public final class MvtReader {
                 }
             }
 
-            if(outerPoly != null) {
+            if (outerPoly != null) {
                 holes.toArray();
                 polygons.add(geomFactory.createPolygon(outerPoly, holes.toArray(new LinearRing[holes.size()])));
             }
@@ -549,19 +553,19 @@ public final class MvtReader {
             double outerArea = 0d;
             LinearRing outerPoly = null;
 
-            for(LinearRing r : rings) {
+            for (LinearRing r : rings) {
                 double area = CGAlgorithms.signedArea(r.getCoordinates());
 
-                if(!r.isRing()) {
+                if (!r.isRing()) {
                     continue; // sanity check, could probably be handled in a isSimple() check
                 }
 
-                if(area == 0d) {
+                if (area == 0d) {
                     continue; // zero-area
                 }
 
-                if(outerPoly == null || (outerArea < 0 == area < 0)) {
-                    if(outerPoly != null) {
+                if (outerPoly == null || (outerArea < 0 == area < 0)) {
+                    if (outerPoly != null) {
                         polygons.add(geomFactory.createPolygon(outerPoly, holes.toArray(new LinearRing[holes.size()])));
                         holes.clear();
                     }
@@ -572,7 +576,7 @@ public final class MvtReader {
 
                 } else {
 
-                    if(Math.abs(outerArea) < Math.abs(area)) {
+                    if (Math.abs(outerArea) < Math.abs(area)) {
                         continue; // Holes must have less area, could probably be handled in a isSimple() check
                     }
 
@@ -581,7 +585,7 @@ public final class MvtReader {
                 }
             }
 
-            if(outerPoly != null) {
+            if (outerPoly != null) {
                 holes.toArray();
                 polygons.add(geomFactory.createPolygon(outerPoly, holes.toArray(new LinearRing[holes.size()])));
             }

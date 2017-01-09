@@ -30,7 +30,12 @@ public final class MvtBuildTest {
     private static final double WORLD_SIZE = 100D;
 
     /** Do not filter tile geometry */
-    private static final IGeometryFilter ACCEPT_ALL_FILTER = geometry -> true;
+    private static final IGeometryFilter ACCEPT_ALL_FILTER = new IGeometryFilter() {
+        @Override
+        public boolean accept(Geometry geometry) {
+            return true;
+        }
+    };
 
     /** Default MVT parameters */
     private static final MvtLayerParams DEFAULT_MVT_PARAMS = new MvtLayerParams();

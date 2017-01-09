@@ -8,7 +8,7 @@ import org.junit.Test;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.nio.file.Paths;
+import java.io.File;
 import java.util.List;
 
 import static org.junit.Assert.*;
@@ -54,7 +54,7 @@ public final class MvtReaderTest {
 
     private static List<Geometry> loadGeoms(String path) throws IOException {
         return MvtReader.loadMvt(
-                Paths.get(path),
+                new File(path),
                 new GeometryFactory(),
                 new TagKeyValueMapConverter());
     }
@@ -62,7 +62,7 @@ public final class MvtReaderTest {
     private static List<Geometry> loadGeoms(String path,
                                             MvtReader.RingClassifier ringClassifier) throws IOException {
         return MvtReader.loadMvt(
-                Paths.get(path),
+                new File(path),
                 new GeometryFactory(),
                 new TagKeyValueMapConverter(),
                 ringClassifier);

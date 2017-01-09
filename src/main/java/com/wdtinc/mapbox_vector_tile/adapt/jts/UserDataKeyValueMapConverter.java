@@ -48,7 +48,7 @@ public final class UserDataKeyValueMapConverter implements IUserDataConverter {
                 @SuppressWarnings("unchecked")
                 final Map<String, Object> userDataMap = (Map<String, Object>)userData;
 
-                userDataMap.entrySet().stream().forEach(e -> {
+                for(Map.Entry<String, Object> e :userDataMap.entrySet()){
                     final String key = e.getKey();
                     final Object value = e.getValue();
 
@@ -60,7 +60,7 @@ public final class UserDataKeyValueMapConverter implements IUserDataConverter {
                             featureBuilder.addTags(valueIndex);
                         }
                     }
-                });
+                }
 
                 // Set feature id value
                 if(setId) {
