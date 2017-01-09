@@ -1,4 +1,4 @@
-# MapBox Vector Tile - Java
+# MapBox Vector Tile - Android
 
 ## Overview
 
@@ -15,20 +15,11 @@ See:
 
 ### Dependency
 
-#### Maven
-
-```xml
-<dependency>
-    <groupId>com.wdtinc</groupId>
-    <artifactId>mapbox-vector-tile</artifactId>
-    <version>1.1.1</version>
-</dependency>
-```
-
 #### Gradle
 
 ```
-compile 'com.wdtinc:mapbox-vector-tile:1.1.1'
+compile 'com.google.protobuf:protobuf-java:3.0.0-beta-2'
+compile 'org.webjars.npm:browserify-zlib:0.1.4'
 ```
 
 ### Reading MVTs
@@ -42,14 +33,14 @@ stored as a JTS geometry user data object within the Geometry.
 GeometryFactory geomFactory = new GeometryFactory();
 
 List<Geometry> geoms = MvtReader.loadMvt(
-        Paths.get("path/to/your.mvt"),
+        new ByteArrayInputStream(new byte[0]),
         geomFactory,
         new TagKeyValueMapConverter());
 
 
 // Allow negative-area exterior rings with classifier
 List<Geometry> geoms = MvtReader.loadMvt(
-        Paths.get("path/to/your.mvt"),
+        new ByteArrayInputStream(new byte[0]),
         geomFactory,
         new TagKeyValueMapConverter(),
         MvtReader.RING_CLASSIFIER_V1);
